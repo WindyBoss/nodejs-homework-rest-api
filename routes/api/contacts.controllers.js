@@ -1,43 +1,85 @@
-const {
-  listContacts,
-  getContactById,
-  removeContact,
-  addContact,
-  updateContact,
-} = require("../../models/contacts.js");
-
 const Joi = require("joi");
+const contactModel = require("./contacts.model");
+const { ObjectId } = require("mongodb");
 
 class ContactControllers {
-  async getAllContacts(req, res) {
-    const contacts = await listContacts();
-    return res.status(200).json(contacts).send();
+  async getAllContacts(req, res, next) {
+    try {
+      const contacts = await contactModel.find();
+      return res.status(200).json(contacts).send();
+    } catch (error) {
+      next(error);
+    }
   }
 
-  async getContact(req, res) {
-    const contact = await getContactById(req.params.contactId);
-    if (!contact) {
-      return res.status(404).json({ message: "Not found" });
+  async getContact(req, res, next) {
+    try {
+      const contact = await contactModel.findById(req.params.contactId);
+
+      if (!contact) {
+        return res.status(404).json({
+          error: "contact not found",
+        });
+      }
+      return res.status(200).json(contact).send();
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  validateUserID(req, res, next) {
+    const contactId = req.params.contactId;
+
+    if (!ObjectId.isValid(contactId)) {
+      return res.status(400).json({
+        error: "Invalid user id",
+      });
     }
 
-    return res.status(200).json(contact).send();
+    next();
   }
 
   async removeContactById(req, res, next) {
-    removeContact(req.params.contactId);
-    return res.status(200).json({ message: "contact deleted" }).send();
+    try {
+      const contact = await contactModel.findByIdAndRemove(
+        req.params.contactId
+      );
+
+      if (!contact) {
+        return res.status(404).json({
+          error: "Contact not found",
+        });
+      }
+
+      return res.status(200).json({
+        message: "Contact deleted",
+        user: contact,
+      });
+    } catch (error) {
+      next(error);
+    }
   }
 
   async addNewContact(req, res, next) {
-    addContact(req.body.variables);
-    return res.status(201).send({ message: "contact added" });
+    try {
+      const requestBody = JSON.parse(req.body.query);
+      const newBody = { ...requestBody, favorite: false };
+      const contact = await contactModel.create(newBody); // - function for creation an element in Mongodb with validation
+
+      return res
+        .status(201)
+        .json({ contact: contact, message: "Contact added" });
+    } catch (error) {
+      next(error);
+    }
   }
 
-  async validateAddContact(req, res, next) {
+  validateAddContact(req, res, next) {
     const validationSchema = Joi.object({
       name: Joi.string().required(),
       email: Joi.string().email().required(),
       phone: Joi.string().required(),
+      favorite: Joi.bool().required(),
     });
 
     const contactData = req.body.variables;
@@ -56,15 +98,36 @@ class ContactControllers {
   }
 
   async updateContactById(req, res, next) {
-    updateContact(req.params.contactId, req.body.variables);
-    return res.status(200).json({ message: "contact updated" }).send();
+    try {
+      const contactId = req.params.contactId;
+      const requestBody = JSON.parse(req.body.query);
+
+      const updateResults = await contactModel.findByIdAndUpdate(
+        contactId,
+        requestBody
+      );
+
+      if (!updateResults) {
+        return res.status(404).json({
+          error: "Contact is not found",
+        });
+      }
+
+      return res.status(204).json({ message: "Contact updated" });
+    } catch (error) {
+      next({
+        error: error,
+        message: "Contact is not found",
+      });
+    }
   }
 
-  async validateUpdateContactById(req, res, next) {
+  validateUpdateContactById(req, res, next) {
     const validationSchema = Joi.object({
       name: Joi.string(),
       email: Joi.string().email(),
       phone: Joi.string(),
+      favorite: Joi.bool(),
     });
 
     const contactData = req.body.variables;
@@ -75,6 +138,27 @@ class ContactControllers {
     }
 
     next();
+  }
+
+  async updateStatusContact(req, res, next) {
+    try {
+      const contactId = req.params.contactId;
+      const requestBody = JSON.parse(req.body.query);
+
+      if (!requestBody.favorite) {
+        return res.status(400).json({ message: "missing field favorite" });
+      }
+
+      const updateResults = await contactModel.findByIdAndUpdate(
+        contactId,
+        requestBody,
+        { new: true }
+      );
+
+      return res.status(200).json(updateResults);
+    } catch (error) {
+      next({ message: "Not found" });
+    }
   }
 }
 

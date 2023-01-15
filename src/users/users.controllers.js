@@ -2,7 +2,7 @@ const Joi = require("joi");
 const usersModel = require("./users.model");
 const bcryptjs = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-
+const gravatar = require("gravatar");
 const { UnauthorizedError } = require("../errorHandler/errorHandler");
 
 class UsersController {
@@ -28,7 +28,7 @@ class UsersController {
 
   async _userRegistration(req, res, next) {
     try {
-      const { password, email } = req.body.variables;
+      const { password, email } = req.body;
 
       const isUserExist = await usersModel.findByEmail(email);
 
@@ -38,9 +38,16 @@ class UsersController {
 
       const hashedPassword = await bcryptjs.hash(password, this._costFactor);
 
+      const avatarURL = gravatar.url(
+        email,
+        { s: "100", r: "x", d: "retro" },
+        true
+      );
+
       const newUser = await usersModel.create({
         email: email,
         password: hashedPassword,
+        avatarURL: avatarURL,
       });
 
       const [preparedUserData] = this.prepareReturnUserData([newUser]);
@@ -58,7 +65,7 @@ class UsersController {
 
   async _userLogIn(req, res, next) {
     try {
-      const { email, password } = req.body.variables;
+      const { email, password } = req.body;
       const [user] = await usersModel.findByEmail(email);
 
       if (!user) {
@@ -94,7 +101,7 @@ class UsersController {
       password: Joi.string().required(),
     });
 
-    const userData = req.body.variables;
+    const userData = req.body;
 
     const validationResult = validationSchema.validate(userData);
 
@@ -151,7 +158,7 @@ class UsersController {
   }
 
   async _updateUserSubscription(req, res, next) {
-    const { subscription } = req.body.variables;
+    const { subscription } = req.body;
     const { _id } = req.user;
 
     const subscriptionTypes = ["starter", "pro", "business"];
@@ -182,6 +189,52 @@ class UsersController {
       message: "User updated",
     });
   }
+
+  async updateUserAvatar(req, res, next) {
+    try {
+      const { _id, avatarURL } = req.user;
+
+      const updateResults = await usersModel.findByIdAndUpdate(
+        _id,
+        { avatarURL: avatarURL },
+        { new: true }
+      );
+
+      if (!updateResults) {
+        next(new UnauthorizedError({ message: "Not authorized" }));
+      }
+
+      return res.status(200).json({ message: avatarURL });
+    } catch (error) {
+      next(new UnauthorizedError({ message: "Not authorized" }));
+    }
+  }
+
+  // async logIn(email, password) {
+  //   const [user] = await usersModel.findByEmail(email);
+  //   if (!user) {
+  //     throw new UnauthorizedError({ message: "Not authorized" });
+  //   }
+
+  //   const isPasswordsValid = await bcryptjs.compare(password, user.password);
+
+  //   if (!isPasswordsValid) {
+  //     throw new UnauthorizedError({ message: "Not authorized" });
+  //   }
+
+  //   const token = await jwt.sign({ id: user._id }, process.env.JWT_SECRET);
+  //   await usersModel.updateToken(user._id, token);
+
+  //   const [preparedUserData] = this.prepareReturnUserData([user]);
+
+  //   return res.status(200).json({
+  //     token,
+  //     user: {
+  //       ...preparedUserData,
+  //       subscription: "starter",
+  //     },
+  //   });
+  // }
 
   prepareReturnUserData(users = []) {
     const newUserListData = users.map((user) => {

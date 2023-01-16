@@ -80,7 +80,7 @@ class ContactControllers {
 
   async addNewContact(req, res, next) {
     try {
-      const requestBody = JSON.parse(req.body.query);
+      const requestBody = req.body;
       const newBody = { ...requestBody, favorite: false };
       const contact = await contactModel.create(newBody);
 
@@ -100,7 +100,7 @@ class ContactControllers {
       favorite: Joi.bool().required(),
     });
 
-    const contactData = req.body.variables;
+    const contactData = req.body;
     const result = validationSchema.validate(contactData);
 
     if (result?.error) {
@@ -118,7 +118,7 @@ class ContactControllers {
   async updateContactById(req, res, next) {
     try {
       const contactId = req.params.contactId;
-      const requestBody = JSON.parse(req.body.query);
+      const requestBody = req.body;
 
       const updateResults = await contactModel.findByIdAndUpdate(
         contactId,
@@ -148,7 +148,7 @@ class ContactControllers {
       favorite: Joi.bool(),
     });
 
-    const contactData = req.body.variables;
+    const contactData = req.body;
     const result = validationSchema.validate(contactData);
 
     if (result?.error) {
@@ -161,7 +161,7 @@ class ContactControllers {
   async updateStatusContact(req, res, next) {
     try {
       const contactId = req.params.contactId;
-      const requestBody = JSON.parse(req.body.query);
+      const requestBody = req.body;
 
       if (!requestBody.favorite) {
         return res.status(400).json({ message: "missing field favorite" });

@@ -29,7 +29,7 @@ class ContactControllers {
   }
 
   async addNewContact(req, res, next) {
-    addContact(req.body.variables);
+    addContact(req.body);
     return res.status(201).send({ message: "contact added" });
   }
 
@@ -40,7 +40,7 @@ class ContactControllers {
       phone: Joi.string().required(),
     });
 
-    const contactData = req.body.variables;
+    const contactData = req.body;
     const result = validationSchema.validate(contactData);
 
     if (result?.error) {
@@ -56,7 +56,7 @@ class ContactControllers {
   }
 
   async updateContactById(req, res, next) {
-    updateContact(req.params.contactId, req.body.variables);
+    updateContact(req.params.contactId, req.body);
     return res.status(200).json({ message: "contact updated" }).send();
   }
 
@@ -67,7 +67,7 @@ class ContactControllers {
       phone: Joi.string(),
     });
 
-    const contactData = req.body.variables;
+    const contactData = req.body;
     const result = validationSchema.validate(contactData);
 
     if (result?.error) {

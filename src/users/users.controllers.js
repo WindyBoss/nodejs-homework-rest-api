@@ -28,7 +28,7 @@ class UsersController {
 
   async _userRegistration(req, res, next) {
     try {
-      const { password, email } = req.body.variables;
+      const { password, email } = req.body;
 
       const isUserExist = await usersModel.findByEmail(email);
 
@@ -58,7 +58,7 @@ class UsersController {
 
   async _userLogIn(req, res, next) {
     try {
-      const { email, password } = req.body.variables;
+      const { email, password } = req.body;
       const [user] = await usersModel.findByEmail(email);
 
       if (!user) {
@@ -94,7 +94,7 @@ class UsersController {
       password: Joi.string().required(),
     });
 
-    const userData = req.body.variables;
+    const userData = req.body;
 
     const validationResult = validationSchema.validate(userData);
 
@@ -151,7 +151,7 @@ class UsersController {
   }
 
   async _updateUserSubscription(req, res, next) {
-    const { subscription } = req.body.variables;
+    const { subscription } = req.body;
     const { _id } = req.user;
 
     const subscriptionTypes = ["starter", "pro", "business"];

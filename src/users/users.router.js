@@ -9,6 +9,8 @@ router.post(
   usersController.userRegistration
 );
 
+router.get("/verify/:verificationToken", usersController.verifyEmail);
+
 router.put(
   "/login",
   usersController.userDataValidation,
@@ -21,6 +23,12 @@ router.get(
   "/current",
   usersController.authorize,
   usersController.getCurrentUser
+);
+
+router.post(
+  "/verify",
+  usersController.validateRepeatVerify,
+  usersController.repeatVerify
 );
 
 router.patch(

@@ -72,6 +72,7 @@ class ContactControllers {
     } catch (error) {
       next(error);
     }
+
   }
 
   validateAddContact(req, res, next) {
@@ -98,6 +99,7 @@ class ContactControllers {
   }
 
   async updateContactById(req, res, next) {
+
     try {
       const contactId = req.params.contactId;
       const requestBody = req.body;

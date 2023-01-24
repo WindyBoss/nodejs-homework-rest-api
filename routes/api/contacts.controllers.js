@@ -5,7 +5,25 @@ const { ObjectId } = require("mongodb");
 class ContactControllers {
   async getAllContacts(req, res, next) {
     try {
-      const contacts = await contactModel.find();
+      const { page, limit, favorite } = req.query;
+
+      const actualLimit = limit ? limit : 20;
+      const pageNumber = page
+        ? (page - 1) * actualLimit
+        : (1 - 1) * actualLimit;
+
+      let contacts = [];
+
+      if (favorite) {
+        contacts = await contactModel.find({
+          favorite: favorite,
+        });
+      } else {
+        contacts = await contactModel
+          .find()
+          .limit(actualLimit)
+          .skip(pageNumber);
+      }
       return res.status(200).json(contacts).send();
     } catch (error) {
       next(error);
@@ -64,7 +82,7 @@ class ContactControllers {
     try {
       const requestBody = req.body;
       const newBody = { ...requestBody, favorite: false };
-      const contact = await contactModel.create(newBody); // - function for creation an element in Mongodb with validation
+      const contact = await contactModel.create(newBody);
 
       return res
         .status(201)
@@ -72,7 +90,6 @@ class ContactControllers {
     } catch (error) {
       next(error);
     }
-
   }
 
   validateAddContact(req, res, next) {
@@ -99,7 +116,6 @@ class ContactControllers {
   }
 
   async updateContactById(req, res, next) {
-
     try {
       const contactId = req.params.contactId;
       const requestBody = req.body;
